@@ -1,9 +1,10 @@
 /**
  * Energy API service for communicating with FastAPI backend.
- * Provides typed query parameter serialization and robust error handling.
+ * Provides typed query parameter serialization, environment-aware API URL, and robust error handling.
  */
 
-const API_BASE = '/api/energy';
+const VITE_API_URL = import.meta.env.VITE_API_URL || '';
+const API_BASE = VITE_API_URL ? `${VITE_API_URL.replace(/\/$/, '')}/api/energy` : '/api/energy';
 
 async function fetchJson(endpoint, params = {}) {
   const query = new URLSearchParams();
