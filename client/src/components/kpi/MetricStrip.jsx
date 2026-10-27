@@ -50,36 +50,40 @@ function MetricItem({ label, value, unit = '', formattedDisplay, secondary, tool
         {secondary || '\u00A0'}
       </div>
 
-      {/* Hover Tooltip: Definition · Formula · Time Basis */}
+      {/* Hover Tooltip: Clean content without label prefixes */}
       {showTooltip && tooltip && (
         <div
           role="tooltip"
           className="absolute left-2 top-[calc(100%+4px)] z-[60] w-72 p-3 hairline-all bg-[var(--bg-surface)] rounded-[var(--radius-ctrl)] text-[11px] text-[var(--text-primary)] select-text pointer-events-none tooltip-fade"
         >
-          <div className="font-semibold uppercase tracking-wider pb-1.5 hairline-b mb-2 text-[var(--text-primary)]">
-            {tooltip.title}
-          </div>
-          <div className="space-y-1.5 text-[var(--text-secondary)] leading-snug">
-            <div>
-              <span className="font-medium text-[var(--text-primary)]">Definition: </span>
-              {tooltip.definition}
+          {typeof tooltip === 'string' ? (
+            <div className="text-[var(--text-secondary)] leading-snug">{tooltip}</div>
+          ) : (
+            <div className="space-y-1.5 text-[var(--text-secondary)] leading-snug">
+              {tooltip.definition && (
+                <div className="text-[var(--text-primary)]">
+                  {tooltip.definition}
+                </div>
+              )}
+              {tooltip.formula && (
+                <div>
+                  <code className="font-mono text-[10px] text-[var(--text-primary)] bg-[var(--bg-page)] px-1 py-0.5 rounded">
+                    {tooltip.formula}
+                  </code>
+                </div>
+              )}
+              {tooltip.timeBasis && (
+                <div className="text-[10px] text-[var(--text-muted)]">
+                  {tooltip.timeBasis}
+                </div>
+              )}
+              {tooltip.rawPrecision && (
+                <div className="pt-1 hairline-t text-[10px] font-mono text-[var(--text-muted)] tabular-nums">
+                  {tooltip.rawPrecision}
+                </div>
+              )}
             </div>
-            <div>
-              <span className="font-medium text-[var(--text-primary)]">Formula: </span>
-              <code className="font-mono text-[10px] text-[var(--text-primary)] bg-[var(--bg-page)] px-1 py-0.5 rounded">
-                {tooltip.formula}
-              </code>
-            </div>
-            <div>
-              <span className="font-medium text-[var(--text-primary)]">Basis: </span>
-              {tooltip.timeBasis}
-            </div>
-            {tooltip.rawPrecision && (
-              <div className="pt-1.5 hairline-t text-[10px] font-mono text-[var(--text-muted)] tabular-nums">
-                Exact: {tooltip.rawPrecision}
-              </div>
-            )}
-          </div>
+          )}
         </div>
       )}
     </div>
@@ -87,6 +91,9 @@ function MetricItem({ label, value, unit = '', formattedDisplay, secondary, tool
 }
 
 export function MetricStrip({ summary, data = [], loading = false }) {
+  const hasData = Boolean(summary || data.length > 0);
+  const showSkeleton = loading && !hasData;
+
   const rawMae = summary?.mae ?? 0;
   const rawMbe = summary?.mbe ?? 0;
   const rawAvgActual = summary?.avgActualMW ?? 0;
@@ -104,19 +111,19 @@ export function MetricStrip({ summary, data = [], loading = false }) {
   return (
     <section
       aria-label="Key Performance Metrics"
-      className="bg-[var(--bg-surface)] hairline-b grid grid-cols-2 lg:grid-cols-4 select-none"
+      className={`bg-[var(--bg-surface)] hairline-b grid grid-cols-2 lg:grid-cols-4 select-none transition-opacity duration-150 ${
+        loading && hasData ? 'opacity-90' : 'opacity-100'
+      }`}
     >
       <MetricItem
         label="MAE"
         value={animMae.toLocaleString()}
         unit="MW"
-        loading={loading}
+        loading={showSkeleton}
         borderClass="hairline-b lg:hairline-b-0 hairline-r"
         secondary="Mean absolute error"
         tooltip={{
-          title: 'Mean Absolute Error (MAE)',
           definition: 'Average magnitude of forecast error without sign, across all delivery intervals.',
-          formula: 'MAE = (1/N) · Σ |F_i − A_i|',
           timeBasis: 'All delivery intervals in selected filter window',
           rawPrecision: `${rawMae.toFixed(3)} MW · ${totalPoints} periods`,
         }}
@@ -126,13 +133,11 @@ export function MetricStrip({ summary, data = [], loading = false }) {
         label="Bias (MBE)"
         formattedDisplay={`${animMbe > 0 ? '+' : ''}${animMbe.toLocaleString()}`}
         unit="MW"
-        loading={loading}
+        loading={showSkeleton}
         borderClass="hairline-b lg:hairline-b-0 lg:hairline-r"
         secondary={biasDir}
         tooltip={{
-          title: 'Mean Bias Error (MBE)',
           definition: 'Systematic directional forecast tendency. Positive = chronic over-forecasting.',
-          formula: 'MBE = (1/N) · Σ (F_i − A_i)',
           timeBasis: 'All delivery intervals in selected filter window',
           rawPrecision: `${rawMbe > 0 ? '+' : ''}${rawMbe.toFixed(3)} MW`,
         }}
@@ -142,13 +147,11 @@ export function MetricStrip({ summary, data = [], loading = false }) {
         label="Coverage %"
         formattedDisplay={animCoverage.toFixed(1)}
         unit="%"
-        loading={loading}
+        loading={showSkeleton}
         borderClass="hairline-r"
         secondary="Within ±500 MW tolerance band"
         tooltip={{
-          title: 'Band Coverage Ratio',
           definition: 'Proportion of periods where |Forecast − Actual| ≤ 500 MW.',
-          formula: 'Coverage = (Count(|F_i − A_i| ≤ 500) / N) × 100',
           timeBasis: 'All delivery intervals in selected filter window',
           rawPrecision: `${rawCoverage.toFixed(3)}% · ${within500}/${totalPoints} periods`,
         }}
@@ -158,13 +161,11 @@ export function MetricStrip({ summary, data = [], loading = false }) {
         label="Avg Actual"
         value={animAvgActual.toLocaleString()}
         unit="MW"
-        loading={loading}
+        loading={showSkeleton}
         borderClass=""
         secondary={`${(rawAvgActual / 1000).toFixed(2)} GW mean generation`}
         tooltip={{
-          title: 'Average Actual Generation Outturn',
           definition: 'Average metered wind generation fed into the GB national grid.',
-          formula: 'Avg = (1/N) · Σ Actual_i',
           timeBasis: 'All delivery intervals in selected filter window',
           rawPrecision: `${rawAvgActual.toFixed(3)} MW`,
         }}

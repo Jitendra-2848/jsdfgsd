@@ -10,7 +10,13 @@ function buildLinePath(data, getX, getY, accessor) {
   }, '');
 }
 
-export function TerminalChart({ data = [], loading = false }) {
+export function TerminalChart({
+  data = [],
+  loading = false,
+  startDate = '2026-01-01',
+  endDate = '2026-01-31',
+  onDateRangeChange,
+}) {
   const containerRef = useRef(null);
   const mainSvgRef = useRef(null);
   const [dims, setDims] = useState({ width: 800, mainH: 380, deltaH: 88 });
@@ -161,16 +167,34 @@ export function TerminalChart({ data = [], loading = false }) {
     if (brushStart !== null && brushCurrent !== null) {
       const diff = Math.abs(brushCurrent - brushStart);
       if (diff > 0.02) {
-        const span = range[1] - range[0];
-        setRange([
-          Math.max(0, range[0] + Math.min(brushStart, brushCurrent) * span),
-          Math.min(1, range[0] + Math.max(brushStart, brushCurrent) * span),
-        ]);
+        const minRatio = Math.min(brushStart, brushCurrent);
+        const maxRatio = Math.max(brushStart, brushCurrent);
+
+        const startIdx = Math.max(0, Math.min(visibleData.length - 1, Math.round(minRatio * (visibleData.length - 1))));
+        const endIdx = Math.max(0, Math.min(visibleData.length - 1, Math.round(maxRatio * (visibleData.length - 1))));
+
+        if (startIdx < endIdx && visibleData[startIdx] && visibleData[endIdx]) {
+          const newStart = visibleData[startIdx].deliveryDate;
+          const newEnd = visibleData[endIdx].deliveryDate;
+
+          // If the dragged window selects a different date range, trigger global filter update:
+          if (newStart && newEnd && onDateRangeChange && (newStart !== startDate || newEnd !== endDate)) {
+            onDateRangeChange(newStart, newEnd);
+            setRange([0, 1]);
+          } else {
+            // Sub-day fine zoom inside a single date
+            const span = range[1] - range[0];
+            setRange([
+              Math.max(0, range[0] + minRatio * span),
+              Math.min(1, range[0] + maxRatio * span),
+            ]);
+          }
+        }
       }
     }
     setBrushStart(null);
     setBrushCurrent(null);
-  }, [brushStart, brushCurrent, range]);
+  }, [brushStart, brushCurrent, visibleData, onDateRangeChange, startDate, endDate, range]);
 
   const handlePointerLeave = useCallback(() => {
     setHoverIndex(null);
@@ -178,8 +202,15 @@ export function TerminalChart({ data = [], loading = false }) {
     setBrushCurrent(null);
   }, []);
 
-  const resetZoom = () => setRange([0, 1]);
-  const isZoomed = range[0] > 0.001 || range[1] < 0.999;
+  const resetZoom = () => {
+    setRange([0, 1]);
+    if (onDateRangeChange && (startDate !== '2026-01-01' || endDate !== '2026-01-31')) {
+      onDateRangeChange('2026-01-01', '2026-01-31');
+    }
+  };
+
+  const isFiltered = (startDate && startDate !== '2026-01-01') || (endDate && endDate !== '2026-01-31');
+  const isZoomed = isFiltered || range[0] > 0.001 || range[1] < 0.999;
   const hovered = hoverIndex !== null ? visibleData[hoverIndex] : null;
 
   // Y-axis ticks (6 ticks)
@@ -199,7 +230,7 @@ export function TerminalChart({ data = [], loading = false }) {
     return result;
   }, [visibleData, plotW]);
 
-  if (loading) {
+  if (loading && !data.length) {
     return (
       <div className="bg-[var(--bg-surface)] hairline-b p-6 flex flex-col gap-3 select-none">
         <div className="flex items-center justify-between gap-4">
@@ -223,7 +254,9 @@ export function TerminalChart({ data = [], loading = false }) {
     <div
       ref={containerRef}
       data-chart-container
-      className="bg-[var(--bg-surface)] hairline-b flex flex-col w-full relative select-none"
+      className={`bg-[var(--bg-surface)] hairline-b flex flex-col w-full relative select-none transition-opacity duration-150 ${
+        loading ? 'opacity-85' : 'opacity-100'
+      }`}
     >
       {/* Chart Header: Title + Inline Legend + Zoom Info */}
       <div className="px-4 sm:px-6 py-2.5 hairline-b flex flex-wrap items-center justify-between gap-2 text-[11px]">

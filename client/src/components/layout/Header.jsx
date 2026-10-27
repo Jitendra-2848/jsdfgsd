@@ -26,7 +26,15 @@ export function Header({ lastUpdated, onRefresh, onExport, loading }) {
     : '--:--:-- UTC';
 
   return (
-    <header className="h-12 hairline-b bg-[var(--bg-surface)] px-4 sm:px-6 flex items-center justify-between text-[13px] select-none flex-shrink-0">
+    <header className="h-12 hairline-b bg-[var(--bg-surface)] px-4 sm:px-6 flex items-center justify-between text-[13px] select-none flex-shrink-0 relative overflow-hidden">
+      {/* Background sync hairline pulse: subtle top indicator */}
+      {loading && (
+        <div
+          aria-hidden="true"
+          className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[var(--color-accent)] to-transparent animate-pulse z-50 pointer-events-none"
+        />
+      )}
+
       {/* Left: Product Name + sub-label */}
       <div className="flex items-center gap-2 min-w-0">
         <span className="font-semibold tracking-tight text-[14px] sm:text-[15px] text-[var(--text-primary)] uppercase truncate">

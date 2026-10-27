@@ -3,8 +3,10 @@
  * Provides typed query parameter serialization, environment-aware API URL, and robust error handling.
  */
 
-const VITE_API_URL = import.meta.env.VITE_API_URL || '';
-const API_BASE = VITE_API_URL ? `${VITE_API_URL.replace(/\/$/, '')}/api/energy` : '/api/energy';
+const rawApiUrl = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+const API_BASE = rawApiUrl
+  ? (rawApiUrl.endsWith('/api') ? `${rawApiUrl}/energy` : `${rawApiUrl}/api/energy`)
+  : '/api/energy';
 
 async function fetchJson(endpoint, params = {}) {
   const query = new URLSearchParams();
@@ -16,11 +18,16 @@ async function fetchJson(endpoint, params = {}) {
 
   const url = `${API_BASE}${endpoint}${query.toString() ? `?${query.toString()}` : ''}`;
   
-  const response = await fetch(url, {
-    headers: {
-      'Accept': 'application/json',
-    },
-  });
+  let response;
+  try {
+    response = await fetch(url, {
+      headers: {
+        'Accept': 'application/json',
+      },
+    });
+  } catch (netErr) {
+    throw new Error(`Connection error: Unable to reach energy backend API at ${API_BASE}. Please verify service availability.`);
+  }
 
   if (!response.ok) {
     const errorBody = await response.text();

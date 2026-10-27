@@ -1,7 +1,12 @@
+import os
 import logging
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routes.energy import router as energy_router
+from app.config import PORT, HOST, CORS_ORIGINS
+
+load_dotenv()
 
 logging.basicConfig(
     level=logging.INFO,
@@ -15,21 +20,13 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Enable CORS for React frontend
-origins = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "http://localhost:5174",
-    "http://127.0.0.1:5174",
-    "http://localhost:3000",
-    "http://127.0.0.1:3000"
-]
+cors_origins = [o.strip() for o in CORS_ORIGINS if o.strip()]
+has_wildcard = "*" in cors_origins or not cors_origins
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
-    allow_origin_regex=r"http://(localhost|127\.0\.0\.1)(:\d+)?",
-    allow_credentials=True,
+    allow_origins=["*"] if has_wildcard else cors_origins,
+    allow_credentials=not has_wildcard,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -51,4 +48,6 @@ def health():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="127.0.0.1", port=5000, reload=True)
+    debug_mode = os.getenv("DEBUG", "false").lower() == "true"
+    logger.info(f"Starting server on {HOST}:{PORT} (debug={debug_mode})")
+    uvicorn.run("main:app", host=HOST, port=PORT, reload=debug_mode)

@@ -79,7 +79,9 @@ export function TerminalTabs({
   return (
     <section
       aria-label="Risk Distribution and Cutoff Sensitivity Analysis"
-      className="bg-[var(--bg-surface)] hairline-b flex flex-col w-full select-none"
+      className={`bg-[var(--bg-surface)] hairline-b flex flex-col w-full select-none transition-opacity duration-150 ${
+        loading && data.length > 0 ? 'opacity-90' : 'opacity-100'
+      }`}
     >
       {/* Tab Header */}
       <div
@@ -135,7 +137,7 @@ export function TerminalTabs({
           aria-labelledby="tab-risk"
           className="p-4 sm:p-6"
         >
-          {loading ? (
+          {loading && !data.length ? (
             <div className="space-y-3">
               {Array.from({ length: 5 }).map((_, i) => (
                 <div key={i} className="flex items-center gap-4">
@@ -200,7 +202,7 @@ export function TerminalTabs({
           aria-labelledby="tab-sensitivity"
           className="overflow-x-auto"
         >
-          {loading ? (
+          {loading && sortedComparisons.length === 0 ? (
             <div className="p-6 space-y-2">
               {Array.from({ length: 5 }).map((_, i) => (
                 <div key={i} className="flex gap-6">
