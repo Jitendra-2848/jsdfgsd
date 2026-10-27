@@ -125,13 +125,13 @@ export function Toolbar({
               <ChevronDown className="w-3 h-3 text-[var(--text-secondary)] flex-shrink-0" />
             </button>
 
-            {/* Date Range Popover */}
+            {/* Date Range Popover — fixed on mobile to prevent clipping by scrollable toolbar */}
             {calendarOpen && (
               <div
                 role="dialog"
                 aria-label="Custom date range selector"
                 aria-modal="true"
-                className="absolute left-0 top-[34px] z-50 p-3 hairline-all bg-[var(--bg-surface)] rounded-[var(--radius-ctrl)] flex flex-col gap-2.5 text-[12px] w-[280px] sm:w-[300px]"
+                className="fixed left-4 right-4 top-[92px] z-[100] max-w-[320px] mx-auto sm:max-w-none sm:mx-0 sm:absolute sm:left-0 sm:right-auto sm:top-[34px] sm:z-50 p-3 hairline-all bg-[var(--bg-surface)] rounded-[var(--radius-ctrl)] flex flex-col gap-2.5 text-[12px] w-[280px] sm:w-[300px] shadow-lg"
               >
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] uppercase tracking-wider text-[var(--text-secondary)] font-semibold">
@@ -211,13 +211,15 @@ export function Toolbar({
                 onKeyDown={handleCutoffKeyDown}
                 title="Use arrow keys to step through cutoff milestones"
                 aria-label={`Current cutoff: ${activeCutoffLabel}`}
-                className="h-7 pl-2 pr-6 hairline-all rounded-[var(--radius-ctrl)] bg-[var(--bg-surface)] text-[var(--text-primary)] text-[10px] sm:text-[11px] font-mono tabular-nums appearance-none cursor-pointer hover:border-[var(--color-accent)]"
+                className="h-7 pl-2 pr-6 hairline-all rounded-[var(--radius-ctrl)] bg-[var(--bg-surface)] text-[var(--text-primary)] text-[10px] sm:text-[11px] font-mono tabular-nums appearance-none cursor-pointer hover:border-[var(--color-accent)] touch-manipulation relative z-10"
               >
                 {CUTOFF_OPTIONS.map((c) => (
-                  <option key={c.value} value={c.value}>{c.label}</option>
+                  <option key={c.value} value={c.value} className="bg-[var(--bg-surface)] text-[var(--text-primary)]">
+                    {c.label}
+                  </option>
                 ))}
               </select>
-              <ChevronDown className="w-3 h-3 text-[var(--text-secondary)] absolute right-1.5 top-2 pointer-events-none" />
+              <ChevronDown className="w-3 h-3 text-[var(--text-secondary)] absolute right-1.5 top-2 pointer-events-none z-20" />
             </div>
           </div>
 

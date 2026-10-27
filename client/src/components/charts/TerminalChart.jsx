@@ -243,12 +243,14 @@ export function TerminalChart({
     );
   }
 
-  // Calculate dynamic tooltip X offset: aligns with crosshair, flips when approaching right border
+  // Calculate dynamic desktop tooltip X offset: aligns with crosshair, flips when approaching right border
   const crosshairSvgX = hoverIndex !== null ? getX(hoverIndex) : 0;
-  const isTooltipFlipped = hoverIndex !== null && hoverIndex > visibleData.length * 0.72;
-  const tooltipLeft = isTooltipFlipped
-    ? Math.max(PL + 8, crosshairSvgX - 200)
-    : Math.min(width - 200, crosshairSvgX + 14);
+  const desktopTooltipWidth = 184;
+  const shouldFlipDesktop = hoverIndex !== null && crosshairSvgX > PL + plotW * 0.58;
+  const rawDesktopLeft = shouldFlipDesktop
+    ? crosshairSvgX - desktopTooltipWidth - 10
+    : crosshairSvgX + 12;
+  const desktopTooltipLeft = Math.max(PL + 4, Math.min(width - desktopTooltipWidth - 8, rawDesktopLeft));
 
   return (
     <div
@@ -259,23 +261,23 @@ export function TerminalChart({
       }`}
     >
       {/* Chart Header: Title + Inline Legend + Zoom Info */}
-      <div className="px-4 sm:px-6 py-2.5 hairline-b flex flex-wrap items-center justify-between gap-2 text-[11px]">
-        <div className="flex flex-wrap items-center gap-3 sm:gap-5">
-          <span className="font-semibold text-[12px] sm:text-[13px] text-[var(--text-primary)] uppercase tracking-wide">
+      <div className="px-3 sm:px-6 py-2 sm:py-2.5 hairline-b flex flex-wrap items-center justify-between gap-2 text-[10px] sm:text-[11px]">
+        <div className="flex flex-wrap items-center gap-2.5 sm:gap-5 min-w-0">
+          <span className="font-semibold text-[11px] sm:text-[13px] text-[var(--text-primary)] uppercase tracking-wide truncate max-w-[210px] sm:max-w-none">
             Day-Ahead Wind: Forecast vs Outturn
           </span>
           {/* Inline Legend */}
-          <div className="flex items-center gap-3 sm:gap-4">
+          <div className="flex items-center gap-2.5 sm:gap-4 shrink-0">
             <div className="flex items-center gap-1.5">
-              <span className="inline-block w-5 h-[2px] bg-[var(--chart-actual)]" aria-hidden="true" />
-              <span className="text-[11px] font-semibold text-[var(--text-primary)]">Actual</span>
+              <span className="inline-block w-4 sm:w-5 h-[2px] bg-[var(--chart-actual)]" aria-hidden="true" />
+              <span className="text-[10px] sm:text-[11px] font-semibold text-[var(--text-primary)]">Actual</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span
-                className="inline-block w-5 border-t-2 border-dashed border-[var(--chart-forecast)]"
+                className="inline-block w-4 sm:w-5 border-t-2 border-dashed border-[var(--chart-forecast)]"
                 aria-hidden="true"
               />
-              <span className="text-[11px] font-semibold text-[var(--text-primary)]">Forecast</span>
+              <span className="text-[10px] sm:text-[11px] font-semibold text-[var(--text-primary)]">Forecast</span>
             </div>
           </div>
         </div>
@@ -475,14 +477,33 @@ export function TerminalChart({
             ))}
           </svg>
 
-          {/* Floating Crosshair Tooltip: smoothly aligned with the mouse/crosshair */}
+          {/* Mobile / Small Screens (<640px): Ultra-short single-row HUD, strictly contained within left-2 right-2 */}
+          {hovered && hoverIndex !== null && (
+            <div className="sm:hidden absolute top-1 left-2 right-2 z-30 pointer-events-none hairline-all bg-[var(--bg-surface)]/95 backdrop-blur-sm px-2 py-1 rounded-[var(--radius-ctrl)] text-[9px] tabular-nums font-mono shadow-sm">
+              <div className="flex items-center justify-between gap-1 leading-none">
+                <span className="text-[var(--text-secondary)] font-medium truncate">
+                  {hovered.timestamp ? hovered.timestamp.slice(5, 16).replace('T', ' ') : hovered.deliveryDate}
+                  {hovered.settlementPeriod ? ` SP${hovered.settlementPeriod}` : ''}
+                </span>
+                <div className="flex items-center gap-1.5 shrink-0 text-[9px]">
+                  <span>Actual : <strong className="text-[var(--chart-actual)] font-semibold">{Math.round(hovered.actualMW)}</strong></span>
+                  <span>Forecast : <strong className="text-[var(--chart-forecast)] font-semibold">{Math.round(hovered.forecastMW)}</strong></span>
+                  <span className="font-semibold text-[var(--text-primary)]">
+                    {hovered.errorMW > 0 ? '+' : ''}{Math.round(hovered.errorMW)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Desktop & Laptop Screens (>=640px): Dedicated Floating Card */}
           {hovered && hoverIndex !== null && (
             <div
               style={{
-                left: `${tooltipLeft}px`,
+                left: `${desktopTooltipLeft}px`,
                 top: '10px',
               }}
-              className="absolute z-30 pointer-events-none hairline-all bg-[var(--bg-surface)] px-3 py-2 rounded-[var(--radius-ctrl)] text-[11px] tabular-nums font-mono shadow-sm transition-all duration-75 ease-out"
+              className="hidden sm:block absolute z-30 pointer-events-none hairline-all bg-[var(--bg-surface)] px-3 py-2 rounded-[var(--radius-ctrl)] text-[11px] tabular-nums font-mono shadow-sm w-[184px] transition-all duration-75 ease-out"
             >
               <div className="text-[var(--text-secondary)] pb-1 hairline-b mb-1.5 text-[10px] flex items-center justify-between gap-2">
                 <span>
