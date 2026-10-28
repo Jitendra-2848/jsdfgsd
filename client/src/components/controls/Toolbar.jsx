@@ -182,7 +182,10 @@ export function Toolbar({
                 <div className="flex justify-end pt-1">
                   <button
                     type="button"
-                    onClick={() => setCalendarOpen(false)}
+                    onClick={() => {
+                      onDateRangeChange(startDate, endDate);
+                      setCalendarOpen(false);
+                    }}
                     className="px-3 py-1 text-[11px] font-semibold bg-[var(--color-accent)] text-white rounded-[4px] cursor-pointer hover:opacity-90"
                   >
                     Apply

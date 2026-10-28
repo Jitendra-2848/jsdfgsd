@@ -16,6 +16,7 @@ export function TerminalChart({
   startDate = '2026-01-01',
   endDate = '2026-01-31',
   onDateRangeChange,
+  resetKey = 0,
 }) {
   const containerRef = useRef(null);
   const mainSvgRef = useRef(null);
@@ -24,6 +25,14 @@ export function TerminalChart({
   const [range, setRange] = useState([0, 1]);
   const [brushStart, setBrushStart] = useState(null);
   const [brushCurrent, setBrushCurrent] = useState(null);
+
+  // Reset internal zoom range whenever the date window is changed or resetKey is triggered
+  useEffect(() => {
+    setRange([0, 1]);
+    setHoverIndex(null);
+    setBrushStart(null);
+    setBrushCurrent(null);
+  }, [startDate, endDate, resetKey]);
 
   // Measure container for fully responsive SVG
   useEffect(() => {
@@ -53,8 +62,11 @@ export function TerminalChart({
   // Slice data to visible range
   const visibleData = useMemo(() => {
     if (!data.length) return [];
-    const s = Math.floor(range[0] * data.length);
-    const e = Math.min(data.length, Math.max(s + 4, Math.ceil(range[1] * data.length)));
+    if (data.length <= 4) return data;
+    const rawS = Math.floor(range[0] * data.length);
+    const rawE = Math.ceil(range[1] * data.length);
+    const s = Math.max(0, Math.min(data.length - 4, rawS));
+    const e = Math.min(data.length, Math.max(s + 4, rawE));
     return data.slice(s, e);
   }, [data, range]);
 
@@ -204,6 +216,9 @@ export function TerminalChart({
 
   const resetZoom = () => {
     setRange([0, 1]);
+    setHoverIndex(null);
+    setBrushStart(null);
+    setBrushCurrent(null);
     if (onDateRangeChange && (startDate !== '2026-01-01' || endDate !== '2026-01-31')) {
       onDateRangeChange('2026-01-01', '2026-01-31');
     }
@@ -312,6 +327,7 @@ export function TerminalChart({
         onMouseLeave={handlePointerLeave}
         onMouseDown={handlePointerDown}
         onMouseUp={handlePointerUp}
+        onDoubleClick={resetZoom}
         onTouchMove={handlePointerMove}
         onTouchEnd={handlePointerUp}
       >

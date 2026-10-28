@@ -1,5 +1,6 @@
 # Documentation, plans, test reports & presentations
 /*.md
+!README.md
 TEST_AND_LATENCY_REPORT.md
 backend_plan.md
 project_description.md
@@ -22,6 +23,7 @@ htmlcov/
 venv/
 env/
 *.egg-info/
+_DUMP/
 
 # Node dependencies & production builds
 node_modules/

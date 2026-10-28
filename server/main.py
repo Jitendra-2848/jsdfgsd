@@ -1,12 +1,16 @@
 import os
 import logging
+from pathlib import Path
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
 from app.routes.energy import router as energy_router
 from app.config import PORT, HOST, CORS_ORIGINS
 
-load_dotenv()
+# Explicitly load .env from the server root directory
+BASE_DIR = Path(__file__).resolve().parent
+load_dotenv(dotenv_path=BASE_DIR / ".env")
 
 logging.basicConfig(
     level=logging.INFO,

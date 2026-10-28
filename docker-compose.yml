@@ -12,7 +12,7 @@ services:
       - HOST=0.0.0.0
       - CORS_ORIGINS=*
     healthcheck:
-      test: ["CMD-SHELL", "python -c 'import urllib.request; urllib.request.urlopen(\"http://127.0.0.1:5000/health\")'"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/health')"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -27,7 +27,9 @@ services:
     container_name: uk_wind_client
     restart: unless-stopped
     ports:
-      - "${CLIENT_PORT:-5173}:80"
+      - "${CLIENT_PORT:-5173}:5173"
+    environment:
+      - VITE_BACKEND_URL=http://server:5000
     depends_on:
       server:
         condition: service_healthy

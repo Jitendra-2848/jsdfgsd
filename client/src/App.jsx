@@ -14,6 +14,7 @@ export default function App() {
   const [endDate, setEndDate] = useState('2026-01-31');
   const [cutoffHour, setCutoffHour] = useState(11);
   const [resolution, setResolution] = useState('hourly');
+  const [resetKey, setResetKey] = useState(0);
   const {
     dayAhead,
     metrics,
@@ -32,6 +33,7 @@ export default function App() {
   const handleDateRangeChange = (start, end) => {
     setStartDate(start);
     setEndDate(end);
+    setResetKey((prev) => prev + 1);
   };
 
   const handleExport = () => {
@@ -106,6 +108,7 @@ export default function App() {
           startDate={startDate}
           endDate={endDate}
           onDateRangeChange={handleDateRangeChange}
+          resetKey={resetKey}
         />
 
         {/* 6. Tabs below chart: "Risk Distribution" | "Cutoff Sensitivity" */}

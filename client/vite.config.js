@@ -19,6 +19,16 @@ export default defineConfig(({ mode }) => {
         },
       },
     },
+    preview: {
+      port,
+      host: true,
+      proxy: {
+        '/api': {
+          target: backendUrl,
+          changeOrigin: true,
+        },
+      },
+    },
     build: {
       outDir: 'dist',
       sourcemap: false,

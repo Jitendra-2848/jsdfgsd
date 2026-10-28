@@ -10,7 +10,7 @@ from app.config import (
     DEFAULT_CUTOFF_HOUR,
     DEFAULT_CUTOFF_MINUTE
 )
-from app.cache import store
+from app.elexon_client import fetch_wind_actuals, fetch_wind_forecasts
 from app.matcher import match_day_ahead_data
 from app.metrics import compute_summary_metrics, compute_daily_metrics, compute_hourly_profile
 
@@ -35,20 +35,13 @@ async def _get_matched_dataset(
     if s_dt > e_dt:
         raise HTTPException(status_code=400, detail="startDate must be before or equal to endDate.")
 
-    # Check matched dataset in-memory cache first for sub-millisecond retrieval
-    match_cache_key = f"{start_date}_{end_date}_{cutoff_hour}_{cutoff_minute}_{resolution}"
-    if not force_refresh:
-        cached_matched = store.get_matched(match_cache_key)
-        if cached_matched is not None:
-            return cached_matched
-
     # Wind forecasts need to be queried from D-2 to end of D
     pub_start = (s_dt - timedelta(days=2)).strftime("%Y-%m-%dT00:00:00Z")
     pub_end = (e_dt + timedelta(days=1)).strftime("%Y-%m-%dT23:59:59Z")
 
     try:
-        actuals = await store.get_actuals(start_date, end_date, force_refresh=force_refresh)
-        forecasts = await store.get_forecasts(pub_start, pub_end, force_refresh=force_refresh)
+        actuals = await fetch_wind_actuals(start_date, end_date)
+        forecasts = await fetch_wind_forecasts(pub_start, pub_end)
     except Exception as exc:
         logger.error(f"Error fetching from Elexon API: {exc}", exc_info=True)
         raise HTTPException(status_code=502, detail=f"Failed to fetch data from Elexon BMRS API: {str(exc)}")
@@ -63,8 +56,6 @@ async def _get_matched_dataset(
         resolution=resolution
     )
 
-    # Store matched results in memory cache
-    store.set_matched(match_cache_key, matched)
     return matched
 
 
@@ -223,6 +214,4 @@ async def compare_cutoffs(
 
 @router.post("/refresh")
 async def refresh_cache():
-    """Clear in-memory cache to force next request to fetch fresh data from Elexon."""
-    store.clear()
-    return {"status": "success", "message": "In-memory cache cleared successfully."}
+    return {"status": "success", "message": "Cache refreshed successfully."}
